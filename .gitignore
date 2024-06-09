@@ -1,0 +1,5 @@
+.metals
+.vscode
+*.DS_Store
+webserver/target/
+webserver/project/
