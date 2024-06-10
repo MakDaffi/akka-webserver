@@ -3,6 +3,7 @@ package server
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.StatusCodes.InternalServerError
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
@@ -11,6 +12,7 @@ import database.PostgresClient
 
 import scala.util.Failure
 import scala.util.Success
+import java.lang.String
 
 object AkkaPassportApp {
   private def startHttpServer(routes: Route)(implicit system: ActorSystem[_]): Unit = {
@@ -44,6 +46,14 @@ object AkkaPassportApp {
             val passportList = postgresClient.selectPassports()
             val json = JsonUtils.apiPassportOutputToJson(passportList).prettyPrint
             complete(HttpEntity(ContentTypes.`application/json`, json))
+          }
+        } ~ 
+        path("api" / "passports" / Segment) { id =>
+            get {
+              context.system.log.info("Gotten /api/passports request")
+              val passport= postgresClient.selectPassportById(id)
+              val json = JsonUtils.passportToJson(passport).prettyPrint
+              complete(HttpEntity(ContentTypes.`application/json`, json))
           }
         }
       startHttpServer(routes)(context.system)

@@ -6,6 +6,7 @@ import entities._
 object JsonUtils {
     implicit def passportToJson(value: Passport): JsValue = {
         JsObject(
+            "id" -> JsString(value.id),
             "series" -> JsNumber(value.series),
             "number" -> JsNumber(value.number),
             "nameIssued" -> JsString(value.nameIssued),

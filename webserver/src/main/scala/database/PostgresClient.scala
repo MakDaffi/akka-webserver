@@ -26,5 +26,16 @@ class PostgresClient
         }
         return passportList
     }
+
+     def selectPassportById(id: String): Passport = {
+        val statement = connection.createStatement()
+        val passportRaw = statement.executeQuery(Queries.SELECT_PASSPORT_BY_ID.format(id))
+        var passportList = List[Passport]()
+        while(passportRaw.next) {
+            var passport = new Passport(passportRaw)
+            passportList = passportList :+ passport
+        }
+        return passportList(0)
+    }
                     
 }
