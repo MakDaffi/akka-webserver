@@ -1,7 +1,7 @@
 package server
 
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.model.StatusCodes.InternalServerError
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
@@ -44,16 +44,47 @@ object AkkaPassportApp {
           get {
             context.system.log.info("Gotten /api/passports request")
             val passportList = postgresClient.selectPassports()
-            val json = JsonUtils.apiPassportOutputToJson(passportList).prettyPrint
-            complete(HttpEntity(ContentTypes.`application/json`, json))
+            val json = JsonUtils.apiPassportOutputToJson(passportList)
+            complete(
+              HttpResponse(
+                OK,
+                entity = HttpEntity(ContentTypes.`application/json`, json.prettyPrint)
+              )
+            )
           }
         } ~ 
         path("api" / "passports" / Segment) { id =>
             get {
-              context.system.log.info("Gotten /api/passports request")
-              val passport= postgresClient.selectPassportById(id)
-              val json = JsonUtils.passportToJson(passport).prettyPrint
-              complete(HttpEntity(ContentTypes.`application/json`, json))
+              context.system.log.info(s"Gotten /api/passports/$id request")
+              val userPassport= postgresClient.selectUserDataByPassportId(id)
+              if (userPassport != null) {
+                val json = JsonUtils.userPassportToJson(userPassport)
+                complete(
+                  HttpResponse(
+                    OK,
+                    entity = HttpEntity(ContentTypes.`application/json`, json.prettyPrint)
+                  )
+                )
+              } else {
+                complete(HttpResponse(NoContent))
+              }
+          }
+        } ~ 
+        path("api" / "passports" / Segment / "short") { id =>
+            get {
+              context.system.log.info(s"Gotten /api/passports/$id/short request")
+              val user= postgresClient.selectUserByPassportId(id)
+              if (user != null) {
+                val json = JsonUtils.userToJson(user)
+                complete(
+                  HttpResponse(
+                    OK,
+                    entity = HttpEntity(ContentTypes.`application/json`, json.prettyPrint)
+                  )
+                )
+              } else {
+                complete(HttpResponse(NoContent))
+              }
           }
         }
       startHttpServer(routes)(context.system)

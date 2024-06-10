@@ -1,7 +1,7 @@
 package database
 
 import java.sql.{Connection, DriverManager}
-import entities.Passport
+import entities.{Passport, UserPassport, User}
 
 class PostgresClient
 (
@@ -27,15 +27,34 @@ class PostgresClient
         return passportList
     }
 
-     def selectPassportById(id: String): Passport = {
+    def selectUserDataByPassportId(id: String): UserPassport = {
         val statement = connection.createStatement()
-        val passportRaw = statement.executeQuery(Queries.SELECT_PASSPORT_BY_ID.format(id))
-        var passportList = List[Passport]()
-        while(passportRaw.next) {
-            var passport = new Passport(passportRaw)
-            passportList = passportList :+ passport
+        val userPassportRaw = statement.executeQuery(Queries.SELECT_USER_DATA_BY_PASSPORT_ID.format(id))
+        var userPassportList = List[UserPassport]()
+        while(userPassportRaw.next) {
+            var userPassport = new UserPassport(userPassportRaw)
+            userPassportList = userPassportList :+ userPassport
         }
-        return passportList(0)
+        if (userPassportList.length != 0) {
+            return userPassportList(0)
+        } else {
+            return null
+        }
+    }
+
+    def selectUserByPassportId(id: String): User = {
+        val statement = connection.createStatement()
+        val userRaw = statement.executeQuery(Queries.SELECT_USER_BY_PASSPORT_ID.format(id))
+        var userList = List[User]()
+        while(userRaw.next) {
+            var user = new User(userRaw)
+            userList = userList :+ user
+        }
+        if (userList.length != 0) {
+            return userList(0)
+        } else {
+            return null
+        }
     }
                     
 }
