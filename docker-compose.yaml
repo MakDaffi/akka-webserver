@@ -1,6 +1,6 @@
 services:
-  postges:
-    container_name: postges
+  postgres:
+    container_name: postgres
     image: postgres:16.0
     restart: always
     environment:
@@ -17,3 +17,12 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
+  
+  akka-webserver:
+    container_name: webserver
+    build: webserver
+    ports:
+      - "8050:8050"
+    depends_on:
+      postgres:
+        condition: service_healthy
