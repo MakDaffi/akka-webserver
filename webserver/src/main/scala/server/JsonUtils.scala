@@ -18,7 +18,6 @@ object JsonUtils {
 
     implicit def userPassportToJson(value: UserPassport): JsValue = {
         JsObject(
-            "passportId" -> JsString(value.passportId),
             "series" -> JsNumber(value.series),
             "number" -> JsNumber(value.number),
             "nameIssued" -> JsString(value.nameIssued),

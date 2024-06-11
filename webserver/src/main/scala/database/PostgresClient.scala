@@ -1,6 +1,7 @@
 package database
 
 import java.sql.{Connection, DriverManager}
+import java.util.UUID
 import entities.{Passport, UserPassport, User}
 import org.postgresql.util.PSQLException
 
@@ -70,6 +71,27 @@ class PostgresClient
         val statement = connection.createStatement()
         val result = statement.executeUpdate(Queries.DELETE_USER_DATA_BY_PASSPORT_ID.format(id, id))
         return if (result != 0) true else false
+    }
+
+    def insertUserData(id: String, userPassport: UserPassport): Boolean = {
+        val statement = connection.createStatement()
+        try {
+            statement.executeUpdate(
+                Queries.INSERT_PASSPORT.format(
+                    id, userPassport.series, userPassport.number, userPassport.nameIssued,
+                    userPassport.departmentCode, userPassport.registrationPlace, userPassport.visaPlace
+                )
+            )
+            val userId = UUID.randomUUID().toString
+            statement.executeUpdate(
+                Queries.INSERT_USER.format(
+                    userId, userPassport.name, userPassport.surname, userPassport.patronymic, id
+                )
+            )
+        } catch {
+            case e: PSQLException => return false
+        }
+        return true
     }
                     
 }

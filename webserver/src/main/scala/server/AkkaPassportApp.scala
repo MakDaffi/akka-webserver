@@ -8,7 +8,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport. _
 import database.PostgresClient
+import entities._
 
 import scala.util.Failure
 import scala.util.Success
@@ -113,6 +115,24 @@ object AkkaPassportApp {
                 complete(HttpResponse(NoContent))
               } else {
                 complete(HttpResponse(NotFound))
+              }
+          }
+        } ~
+        path("api" / "passports" / Segment) { id =>
+            post {
+              context.system.log.info(s"Gotten POST /api/passports/$id request")
+              entity(as[UserPassport]) { userPassport =>
+                val isNotError = postgresClient.insertUserData(id, userPassport)
+                if (isNotError) {
+                  complete(HttpResponse(NoContent))
+                } else {
+                  complete(
+                    HttpResponse(
+                      Conflict,
+                      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "Record already exist!")
+                    )
+                  )
+                }
               }
           }
         }
