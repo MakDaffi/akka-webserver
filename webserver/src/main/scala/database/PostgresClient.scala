@@ -22,7 +22,7 @@ class PostgresClient
         val passportRaw = statement.executeQuery(Queries.SELECT_PASSPORTS)
         var passportList = List[Passport]()
         while(passportRaw.next) {
-            var passport = new Passport(passportRaw)
+            var passport = Passport.fromResultSet(passportRaw)
             passportList = passportList :+ passport
         }
         return passportList
@@ -34,7 +34,7 @@ class PostgresClient
             val userPassportRaw = statement.executeQuery(Queries.SELECT_USER_DATA_BY_PASSPORT_ID.format(id))
             var userPassportList = List[UserPassport]()
             while(userPassportRaw.next) {
-                var userPassport = new UserPassport(userPassportRaw)
+                var userPassport = UserPassport.fromResultSet(userPassportRaw)
                 userPassportList = userPassportList :+ userPassport
             }
             if (userPassportList.length != 0) {
@@ -53,7 +53,7 @@ class PostgresClient
             val userRaw = statement.executeQuery(Queries.SELECT_USER_BY_PASSPORT_ID.format(id))
             var userList = List[User]()
             while(userRaw.next) {
-                var user = new User(userRaw)
+                var user = User.fromResultSet(userRaw)
                 userList = userList :+ user
             }
             if (userList.length != 0) {
