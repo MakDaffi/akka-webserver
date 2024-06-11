@@ -2,6 +2,7 @@ package database
 
 import java.sql.{Connection, DriverManager}
 import entities.{Passport, UserPassport, User}
+import org.postgresql.util.PSQLException
 
 class PostgresClient
 (
@@ -27,34 +28,48 @@ class PostgresClient
         return passportList
     }
 
-    def selectUserDataByPassportId(id: String): UserPassport = {
+    def selectUserDataByPassportId(id: String): Tuple2[UserPassport, Throwable] = {
         val statement = connection.createStatement()
-        val userPassportRaw = statement.executeQuery(Queries.SELECT_USER_DATA_BY_PASSPORT_ID.format(id))
-        var userPassportList = List[UserPassport]()
-        while(userPassportRaw.next) {
-            var userPassport = new UserPassport(userPassportRaw)
-            userPassportList = userPassportList :+ userPassport
-        }
-        if (userPassportList.length != 0) {
-            return userPassportList(0)
-        } else {
-            return null
+        try {
+            val userPassportRaw = statement.executeQuery(Queries.SELECT_USER_DATA_BY_PASSPORT_ID.format(id))
+            var userPassportList = List[UserPassport]()
+            while(userPassportRaw.next) {
+                var userPassport = new UserPassport(userPassportRaw)
+                userPassportList = userPassportList :+ userPassport
+            }
+            if (userPassportList.length != 0) {
+                return new Tuple2(userPassportList(0), null)
+            } else {
+                return new Tuple2(null, null)
+            }
+        } catch {
+            case e: PSQLException => return new Tuple2(null, e)
         }
     }
 
-    def selectUserByPassportId(id: String): User = {
+    def selectUserByPassportId(id: String): Tuple2[User, Throwable] = {
         val statement = connection.createStatement()
-        val userRaw = statement.executeQuery(Queries.SELECT_USER_BY_PASSPORT_ID.format(id))
-        var userList = List[User]()
-        while(userRaw.next) {
-            var user = new User(userRaw)
-            userList = userList :+ user
+        try {
+            val userRaw = statement.executeQuery(Queries.SELECT_USER_BY_PASSPORT_ID.format(id))
+            var userList = List[User]()
+            while(userRaw.next) {
+                var user = new User(userRaw)
+                userList = userList :+ user
+            }
+            if (userList.length != 0) {
+                return new Tuple2(userList(0), null)
+            } else {
+                return new Tuple2(null, null)
+            }
+        } catch {
+            case e: PSQLException => return new Tuple2(null, e)
         }
-        if (userList.length != 0) {
-            return userList(0)
-        } else {
-            return null
-        }
+    }
+
+    def deleteUserDataByPassportId(id: String): Boolean = {
+        val statement = connection.createStatement()
+        val result = statement.executeUpdate(Queries.DELETE_USER_DATA_BY_PASSPORT_ID.format(id, id))
+        return if (result != 0) true else false
     }
                     
 }

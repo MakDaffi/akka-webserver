@@ -36,13 +36,13 @@ object AkkaPassportApp {
       val routes = 
         path("ping") {
           get {
-            context.system.log.info("Gotten /pong request")
+            context.system.log.info("Gotten GET /pong request")
             complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "pong"))
           }
         } ~
         path("api" / "passports") {
           get {
-            context.system.log.info("Gotten /api/passports request")
+            context.system.log.info("Gotten GET /api/passports request")
             val passportList = postgresClient.selectPassports()
             val json = JsonUtils.apiPassportOutputToJson(passportList)
             complete(
@@ -55,35 +55,64 @@ object AkkaPassportApp {
         } ~ 
         path("api" / "passports" / Segment) { id =>
             get {
-              context.system.log.info(s"Gotten /api/passports/$id request")
-              val userPassport= postgresClient.selectUserDataByPassportId(id)
-              if (userPassport != null) {
-                val json = JsonUtils.userPassportToJson(userPassport)
+              context.system.log.info(s"Gotten GET /api/passports/$id request")
+              val userPassport = postgresClient.selectUserDataByPassportId(id)
+              if (userPassport._2 != null) {
                 complete(
-                  HttpResponse(
-                    OK,
-                    entity = HttpEntity(ContentTypes.`application/json`, json.prettyPrint)
-                  )
+                    HttpResponse(
+                      UnprocessableEntity,
+                      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"$id is not UUID")
+                    )
                 )
               } else {
-                complete(HttpResponse(NoContent))
+                if (userPassport._1 != null) {
+                  val json = JsonUtils.userPassportToJson(userPassport._1)
+                  complete(
+                    HttpResponse(
+                      OK,
+                      entity = HttpEntity(ContentTypes.`application/json`, json.prettyPrint)
+                    )
+                  )
+                } else {
+                  complete(HttpResponse(NotFound))
+                }
               }
           }
         } ~ 
         path("api" / "passports" / Segment / "short") { id =>
             get {
-              context.system.log.info(s"Gotten /api/passports/$id/short request")
-              val user= postgresClient.selectUserByPassportId(id)
-              if (user != null) {
-                val json = JsonUtils.userToJson(user)
+              context.system.log.info(s"Gotten GET /api/passports/$id/short request")
+              val user = postgresClient.selectUserByPassportId(id)
+              if (user._2 != null) {
                 complete(
-                  HttpResponse(
-                    OK,
-                    entity = HttpEntity(ContentTypes.`application/json`, json.prettyPrint)
-                  )
+                    HttpResponse(
+                      UnprocessableEntity,
+                      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"$id is not UUID")
+                    )
                 )
               } else {
+                if (user._1 != null) {
+                  val json = JsonUtils.userToJson(user._1)
+                  complete(
+                    HttpResponse(
+                      OK,
+                      entity = HttpEntity(ContentTypes.`application/json`, json.prettyPrint)
+                    )
+                  )
+                } else {
+                  complete(HttpResponse(NotFound))
+                }
+              }
+          }
+        } ~
+        path("api" / "passports" / Segment) { id =>
+            delete {
+              context.system.log.info(s"Gotten DELETE /api/passports/$id request")
+              val isNotError = postgresClient.deleteUserDataByPassportId(id)
+              if (isNotError) {
                 complete(HttpResponse(NoContent))
+              } else {
+                complete(HttpResponse(NotFound))
               }
           }
         }
