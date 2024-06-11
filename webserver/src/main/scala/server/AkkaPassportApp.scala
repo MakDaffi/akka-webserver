@@ -17,10 +17,15 @@ import scala.util.Success
 import java.lang.String
 
 object AkkaPassportApp {
+  val config = ConfigUtils.config()
+  val postgresClient = new PostgresClient(
+    config.getString("database.host"), config.getInt("database.port"), config.getString("database.name"),
+    config.getString("database.creds.username"), config.getString("database.creds.password")
+  )
+
   private def startHttpServer(routes: Route)(implicit system: ActorSystem[_]): Unit = {
     import system.executionContext
 
-    val config = ConfigUtils.config()
     val futureBinding = Http().bindAndHandle(routes, config.getString("api.host"), config.getInt("api.port"))
     futureBinding.onComplete {
       case Success(binding) =>
@@ -33,11 +38,6 @@ object AkkaPassportApp {
   }
 
   def main(args: Array[String]): Unit = {
-    val config = ConfigUtils.config()
-    val postgresClient = new PostgresClient(
-      config.getString("database.host"), config.getInt("database.port"), config.getString("database.name"),
-      config.getString("database.creds.username"), config.getString("database.creds.password")
-    )
     val rootBehavior = Behaviors.setup[Nothing] { context =>
 
       val routes = 
@@ -124,11 +124,7 @@ object AkkaPassportApp {
               context.system.log.info(s"Gotten DELETE /api/passports/$id request")
               val isNotError = postgresClient.deleteUserDataByPassportId(id)
               if (isNotError) {
-                complete(HttpResponse(
-                    NoContent,
-                    entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"Record with $id doesn't exist!")
-                  )
-                )
+                complete(HttpResponse(NoContent))
               } else {
                 context.system.log.warn(s"Nothing found by UUID: ${id}")
                 complete(HttpResponse(
