@@ -93,5 +93,27 @@ class PostgresClient
         }
         return true
     }
-                    
+
+    def updateUserData(id: String, userPassport: UserPassport): Boolean = {
+        val statement = connection.createStatement()
+        try {
+            var res = statement.executeUpdate(
+                Queries.UPDATE_PASSPORT.format(
+                    userPassport.series, userPassport.number, userPassport.nameIssued,
+                    userPassport.departmentCode, userPassport.registrationPlace, userPassport.visaPlace,
+                    id
+                )
+            )
+            if (res == 0) return false
+            res = statement.executeUpdate(
+                Queries.UPDATE_USER.format(
+                    userPassport.name, userPassport.surname, userPassport.patronymic, id
+                )
+            )
+            if (res == 0) return false
+        } catch {
+            case e: PSQLException => return false
+        }
+        return true
+    }               
 }

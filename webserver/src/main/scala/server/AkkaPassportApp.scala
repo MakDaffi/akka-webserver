@@ -55,32 +55,6 @@ object AkkaPassportApp {
             )
           }
         } ~ 
-        path("api" / "passports" / Segment) { id =>
-            get {
-              context.system.log.info(s"Gotten GET /api/passports/$id request")
-              val userPassport = postgresClient.selectUserDataByPassportId(id)
-              if (userPassport._2 != null) {
-                complete(
-                    HttpResponse(
-                      UnprocessableEntity,
-                      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"$id is not UUID")
-                    )
-                )
-              } else {
-                if (userPassport._1 != null) {
-                  val json = JsonUtils.userPassportToJson(userPassport._1)
-                  complete(
-                    HttpResponse(
-                      OK,
-                      entity = HttpEntity(ContentTypes.`application/json`, json.prettyPrint)
-                    )
-                  )
-                } else {
-                  complete(HttpResponse(NotFound))
-                }
-              }
-          }
-        } ~ 
         path("api" / "passports" / Segment / "short") { id =>
             get {
               context.system.log.info(s"Gotten GET /api/passports/$id/short request")
@@ -108,6 +82,30 @@ object AkkaPassportApp {
           }
         } ~
         path("api" / "passports" / Segment) { id =>
+          get {
+              context.system.log.info(s"Gotten GET /api/passports/$id request")
+              val userPassport = postgresClient.selectUserDataByPassportId(id)
+              if (userPassport._2 != null) {
+                complete(
+                    HttpResponse(
+                      UnprocessableEntity,
+                      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"$id is not UUID")
+                    )
+                )
+              } else {
+                if (userPassport._1 != null) {
+                  val json = JsonUtils.userPassportToJson(userPassport._1)
+                  complete(
+                    HttpResponse(
+                      OK,
+                      entity = HttpEntity(ContentTypes.`application/json`, json.prettyPrint)
+                    )
+                  )
+                } else {
+                  complete(HttpResponse(NotFound))
+                }
+              }
+          } ~
             delete {
               context.system.log.info(s"Gotten DELETE /api/passports/$id request")
               val isNotError = postgresClient.deleteUserDataByPassportId(id)
@@ -116,9 +114,7 @@ object AkkaPassportApp {
               } else {
                 complete(HttpResponse(NotFound))
               }
-          }
-        } ~
-        path("api" / "passports" / Segment) { id =>
+          } ~
             post {
               context.system.log.info(s"Gotten POST /api/passports/$id request")
               entity(as[UserPassport]) { userPassport =>
@@ -134,7 +130,23 @@ object AkkaPassportApp {
                   )
                 }
               }
-          }
+            } ~
+            put {
+              context.system.log.info(s"Gotten POST /api/passports/$id request")
+              entity(as[UserPassport]) { userPassport =>
+                val isNotError = postgresClient.updateUserData(id, userPassport)
+                if (isNotError) {
+                  complete(HttpResponse(NoContent))
+                } else {
+                  complete(
+                    HttpResponse(
+                      NotFound,
+                      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "Record doesn't exist!")
+                    )
+                  )
+                }
+              }
+            }
         }
       startHttpServer(routes)(context.system)
 
