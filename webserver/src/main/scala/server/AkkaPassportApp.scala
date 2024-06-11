@@ -51,6 +51,7 @@ object AkkaPassportApp {
           get {
             context.system.log.info("Gotten GET /api/passports request")
             val passportList = postgresClient.selectPassports()
+            context.system.log.debug(s"Successful selected ${passportList.length} passports")
             val json = JsonUtils.apiPassportOutputToJson(passportList)
             complete(
               HttpResponse(
@@ -65,6 +66,7 @@ object AkkaPassportApp {
               context.system.log.info(s"Gotten GET /api/passports/$id/short request")
               val user = postgresClient.selectUserByPassportId(id)
               if (user._2 != null) {
+                context.system.log.error(s"Validate error. Invalid UUID: ${id}")
                 complete(
                     HttpResponse(
                       UnprocessableEntity,
@@ -81,6 +83,7 @@ object AkkaPassportApp {
                     )
                   )
                 } else {
+                  context.system.log.warn(s"Nothing found by UUID: ${id}")
                   complete(HttpResponse(NotFound))
                 }
               }
@@ -91,6 +94,7 @@ object AkkaPassportApp {
               context.system.log.info(s"Gotten GET /api/passports/$id request")
               val userPassport = postgresClient.selectUserDataByPassportId(id)
               if (userPassport._2 != null) {
+                context.system.log.error(s"Validate error. Invalid UUID: ${id}")
                 complete(
                     HttpResponse(
                       UnprocessableEntity,
@@ -107,7 +111,12 @@ object AkkaPassportApp {
                     )
                   )
                 } else {
-                  complete(HttpResponse(NotFound))
+                  context.system.log.warn(s"Nothing found by UUID: ${id}")
+                  complete(HttpResponse(
+                    NotFound,
+                    entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"Record with $id doesn't exist!")
+                  )
+                )
                 }
               }
           } ~
@@ -115,38 +124,51 @@ object AkkaPassportApp {
               context.system.log.info(s"Gotten DELETE /api/passports/$id request")
               val isNotError = postgresClient.deleteUserDataByPassportId(id)
               if (isNotError) {
-                complete(HttpResponse(NoContent))
+                complete(HttpResponse(
+                    NoContent,
+                    entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"Record with $id doesn't exist!")
+                  )
+                )
               } else {
-                complete(HttpResponse(NotFound))
+                context.system.log.warn(s"Nothing found by UUID: ${id}")
+                complete(HttpResponse(
+                    NotFound,
+                    entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"Record with $id doesn't exist!")
+                  )
+                )
               }
           } ~
             post {
               context.system.log.info(s"Gotten POST /api/passports/$id request")
               entity(as[UserPassport]) { userPassport =>
+                context.system.log.debug(s"Request entity: $userPassport")
                 val isNotError = postgresClient.insertUserData(id, userPassport)
                 if (isNotError) {
                   complete(HttpResponse(NoContent))
                 } else {
+                  context.system.log.warn(s"Record with UUID ${id} already exist")
                   complete(
                     HttpResponse(
                       Conflict,
-                      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "Record already exist!")
+                      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"Record with UUID ${id} already exist!")
                     )
                   )
                 }
               }
             } ~
             put {
-              context.system.log.info(s"Gotten POST /api/passports/$id request")
+              context.system.log.info(s"Gotten PUT /api/passports/$id request")
               entity(as[UserPassport]) { userPassport =>
+                context.system.log.debug(s"Request entity: $userPassport")
                 val isNotError = postgresClient.updateUserData(id, userPassport)
                 if (isNotError) {
                   complete(HttpResponse(NoContent))
                 } else {
+                  context.system.log.warn(s"Record with UUID ${id} already exist")
                   complete(
                     HttpResponse(
                       NotFound,
-                      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "Record doesn't exist!")
+                      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"Record with $id doesn't exist!")
                     )
                   )
                 }
