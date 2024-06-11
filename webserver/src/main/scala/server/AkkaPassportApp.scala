@@ -20,7 +20,8 @@ object AkkaPassportApp {
   private def startHttpServer(routes: Route)(implicit system: ActorSystem[_]): Unit = {
     import system.executionContext
 
-    val futureBinding = Http().bindAndHandle(routes, "localhost", 8050)
+    val config = ConfigUtils.config()
+    val futureBinding = Http().bindAndHandle(routes, config.getString("api.host"), config.getInt("api.port"))
     futureBinding.onComplete {
       case Success(binding) =>
         val address = binding.localAddress
@@ -32,7 +33,11 @@ object AkkaPassportApp {
   }
 
   def main(args: Array[String]): Unit = {
-    val postgresClient = new PostgresClient("localhost", 5432, "akkadb", "postgres", "1234")
+    val config = ConfigUtils.config()
+    val postgresClient = new PostgresClient(
+      config.getString("database.host"), config.getInt("database.port"), config.getString("database.name"),
+      config.getString("database.creds.username"), config.getString("database.creds.password")
+    )
     val rootBehavior = Behaviors.setup[Nothing] { context =>
 
       val routes = 

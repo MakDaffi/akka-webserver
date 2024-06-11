@@ -19,6 +19,7 @@ lazy val root = (project in file(".")).
       "com.typesafe.akka"          %% "akka-stream"              % akkaVersion,
       "ch.qos.logback"             % "logback-classic"           % "1.2.11",
       "com.typesafe.scala-logging" %% "scala-logging"            % "3.9.4",
+      "com.typesafe"               %  "config"                   % "1.4.3",
       "org.postgresql"             % "postgresql"                % "42.5.4",
 
       "com.typesafe.akka" %% "akka-http-testkit"        % akkaHttpVersion % Test,
